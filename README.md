@@ -1,46 +1,86 @@
-# Getting Started with Create React App
+# ai-tutor-studio
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+client 실행 명령어
 
-## Available Scripts
+npm start
 
-In the project directory, you can run:
+server 실행 명령어
 
-### `npm start`
+python -m uvicorn main:app --reload
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
 
-### `npm test`
+데이터 변환 과정
+1. 스크립트 데이터 업로드
+2. 스크립트 데이터를 데이터셋으로 변환 <- 여기서 필요한 프롬프트 등은 데이터베이스에서 가져와서 적용
+3. 변환된 데이터셋을 검수하는 화면에 노출
+4. 검수가 완료되면 데이터베이스에 저장
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-### `npm run build`
+중간 평가 및 피드백
+1. 기본, 로우, 미들, 하이 레벨별 파인튜닝 모델 생성
+  - 로우, 미들, 하이 레벨 모델에 들어갈 answer 데이터셋은 시니어가 직접 제작
+  - llm으로 다듬어서 파인튜닝으로 모델 생성
+2. 같은 문제 제공 후 4가지 모델로 답변 제공 변화 확인
+3. 데이터베이스 구성
+  - 문제 데이터셋 컬렉션 이름 datasets
+    - 문제 + 지문 + 보기 + 답변(기본,로우,미들,하이)
+  - 모델 컬렉션 이름 models
+    - model_name, model_level, fine_tuning_id, status, created_at
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+일단 기본 풀이까지만 넣고 로우미들하이는 나중에 json으로 덤프떠서 넣어가지고 튜터 테스트하자
+기본 풀이 넣고 로우미들하이 풀이 입력해서 저장할 수 있는지 테스트부터 하자.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. 기본 풀이를 가진 문제 데이터셋에 3개 난이도의 풀이를 추가할 수 있는 페이지
+  - 각 월별 문제 목록 선택하는 리스트 페이지 : 레벨별 풀이를 추가했는지 여부에 따라 '미완료' '완료' 표시
+  - 선택해서 들어가면 해당 문제와 풀이를 기본으로 보여주고 아래에 3개의 풀이 입력 칸 제공.
+  - 문제를 나열하는 방식은 어떻게 할 것 인가? 가로로 슬라이드 방식 사용할 것인가 아니면 한문제씩 보여주고 완료 후 다음문제 버튼 누르면 저장 후 넘어가는방식? 그럼 사이드바를 두고 문제 번호 표시해서 이동할 수 있도록 해야겠네? 풀이가 입력돼있는 문제 번호는 색상 입혀주고?
+  - 풀이 입력 도중에 저장하고 나갔다 들어오면 저장한 부분은 나오고 아닌부분은 빈칸이어야함. 그러면 무조건 put을 써야하나?
+  - 저장을 누르면 데이터베이스에 각각의 풀이가 데이터베이스에 저장됨
 
-### `npm run eject`
+2. 각각의 난이도 풀이를 기본 풀이를 가진 데이터셋에 각각 합쳐서 총 기본, 로우, 미들, 하이 네 개의 jsonl 데이터셋 생성
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+3. 각각의 jsonl 데이터셋으로 파인튜닝 모델 생성
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+4. 각각의 파인튜닝 모델로 문제 제공 후 풀이 제공 변화 확인
+  - 1번에서 만든 각 월별 문제 목록 선택하는 리스트 페이지에서? 아니면 모델 완성된거만 리스트로 나오는 페이지? 가 낫겠다.
+  - 모델 완성된 경우에만 튜터 테스트 리스트에 노출되고 테스트 페이지로 이동 가능
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+문제만 들어있는 테이블 데이터 형식 : questions
+  - test_month
+  - subject_name
+  - question_num
+  - question
+  - content
+  - choices
 
-## Learn More
+기본 풀이만 들어있는 테이블 데이터 형식 : base_answer
+  - test_month
+  - subject_name
+  - question_num
+  - answer
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+로우 풀이만 들어있는 테이블 데이터 형식 : low_answer
+  - test_month
+  - subject_name
+  - question_num
+  - answer
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+미들 풀이만 들어있는 테이블 데이터 형식 : medium_answer
+  - test_month
+  - subject_name
+  - question_num
+  - answer
+
+하이 풀이만 들어있는 테이블 데이터 형식 : high_answer
+  - test_month
+  - subject_name
+  - question_num
+  - answer
+
+학생 레벨 데이터 형식 : students
+  - student_id
+  - name
+  - level
